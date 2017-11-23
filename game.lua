@@ -4,11 +4,16 @@
 -- script: lua
 
 Constantes = {
-  TIPO_JOGADOR = 1,
-  TIPO_CHAVE = 2,
-  TIPO_PORTA = 3,
-  TIPO_INIMIGO = 4,
-  TIPO_ESPADA = 5,
+  CIMA = 1,
+  BAIXO = 2,
+  ESQUERDA = 3,
+  DIREITA = 4,
+
+  TIPO_JOGADOR = "JOGADOR",
+  TIPO_CHAVE = "CHAVE",
+  TIPO_PORTA = "PORTA",
+  TIPO_INIMIGO = "INIMIGO",
+  TIPO_ESPADA = "ESPADA",
 
   SPRITE_JOGADOR =  256,
   SPRITE_CHAVE = 288,
@@ -24,6 +29,7 @@ Constantes = {
   BLOCOID_SAIDA = 32,
 
   VELOCIDADE_ANIMACAO_JOGADOR = 0.2,
+  VELOCIDADE_ANIMACAO_ESPADA = 0.45,
   VELOCIDADE_ANIMACAO_INIMIGO = 0.2,
 
   ID_SOM_CHAVE = 0,
@@ -36,11 +42,10 @@ Constantes = {
 }
 
 Estado = {
-  PARADO = 1,
-  ANDANDO = 2,
-  PERSEGUINDO = 3,
-  ATINGIDO = 4,
-  NORMAL = 5
+  PARADO = "PARADO",
+  ANDANDO = "ANDANDO",
+  PERSEGUINDO = "PERSEGUINDO",
+  ATINGIDO = "ATINGIDO"
 }
 
 Tela = {
@@ -48,11 +53,6 @@ Tela = {
   JOGO = 2,
   FINAL = 3
 }
-
-CIMA = 1
-BAIXO = 2
-ESQUERDA = 3
-DIREITA = 4
 
 Direcao = {
   {deltaX = 0, deltaY = -1},
@@ -144,20 +144,63 @@ tempoAteTransicao = 0
 
 function inicializa()
   leObjetosDoMapa()
+
+  atualizaEstado = {
+    PARADO = atualizaEstadoParado,
+    ANDANDO = atualizaEstadoAndando,
+    PERSEGUINDO = atualizaEstadoPerseguindo,
+    ATINGIDO = atualizaEstadoAtingido
+  }
+
+  funcaoDeColisao = {
+    JOGADOR = {
+      JOGADOR = nil,
+      ESPADA = nil,
+      CHAVE = fazColisaoJogadorComChave,
+      PORTA = fazColisaoJogadorComPorta,
+      INIMIGO = fazColisaoJogadorComInimigo
+    },
+    ESPADA = {
+      JOGADOR = nil,
+      ESPADA = nil,
+      CHAVE = nil,
+      PORTA = nil,
+      INIMIGO = fazColisaoEspadaComInimigo
+    },
+    CHAVE = {
+      JOGADOR = nil,
+      ESPADA = nil,
+      CHAVE = nil,
+      PORTA = nil,
+      INIMIGO = nil
+    },
+    PORTA = {
+      JOGADOR = nil,
+      ESPADA = nil,
+      CHAVE = nil,
+      PORTA = nil,
+      INIMIGO = nil
+    },
+    INIMIGO = {
+      JOGADOR = nil,
+      ESPADA = nil,
+      CHAVE = nil,
+      PORTA = fazColisaoInimigoComPorta,
+      INIMIGO = nil
+    }
+  }
 end
 
 function leObjetosDoMapa()
   for linha = 0, 34 do
     for coluna = 0, 60 do
       local blocoId = mget(coluna, linha)
-      if blocoId == Constantes.BLOCOID_SAIDA then
+      if blocoEhSaida(blocoId) then
         posicaoDaSaida = {
           x = coluna * 8 + 8,
           y = linha * 8 + 8
         }
-      elseif blocoId == Constantes.BLOCOID_CHAVE or
-       blocoId == Constantes.BLOCOID_PORTA or
-       blocoId == Constantes.BLOCOID_INIMIGO then
+      elseif blocoEhObjeto(blocoId) then
         mset(coluna, linha, 0)
         local objeto = {
           blocoId = blocoId,
@@ -170,6 +213,22 @@ function leObjetosDoMapa()
   end
 end
 
+function blocoEhSaida(blocoId)
+  if blocoId == Constantes.BLOCOID_SAIDA then
+    return true
+  end
+  return false
+end
+
+function blocoEhObjeto(blocoId)
+  if blocoId == Constantes.BLOCOID_CHAVE
+    or blocoId == Constantes.BLOCOID_PORTA
+    or blocoId == Constantes.BLOCOID_INIMIGO then
+    return true
+  end
+  return false
+end
+
 function resetaJogo()
   jogador = {
     sprite = Constantes.SPRITE_JOGADOR,
@@ -178,11 +237,10 @@ function resetaJogo()
     corTransparente = 6,
     tipo = Constantes.TIPO_JOGADOR,
     chaves = 0,
-    direcao = BAIXO,
+    direcao = Constantes.BAIXO,
     quadroDeAnimacao = 1,
     vida = 5,
     vidaMaxima = 5,
-    estado = Estado.NORMAL,
     tempoInvulneravel = 0,
   }
   espada = {
@@ -190,6 +248,7 @@ function resetaJogo()
     x = -16,
     y = -16,
     sprite = 0,
+    esperaDoAtaque = 0,
     tipo = Constantes.TIPO_ESPADA
   }
   camera = {
@@ -202,16 +261,23 @@ end
 function criaObjetosIniciais()
   objetos = {}
   for indice, objetoACriar in pairs(objetosIniciais) do
-    local objeto = nil
-    if objetoACriar.blocoId == Constantes.BLOCOID_CHAVE then
-      objeto = criaChave(objetoACriar.coluna, objetoACriar.linha)
-    elseif objetoACriar.blocoId == Constantes.BLOCOID_PORTA then
-      objeto = criaPorta(objetoACriar.coluna, objetoACriar.linha)
-    elseif objetoACriar.blocoId == Constantes.BLOCOID_INIMIGO then
-      objeto = criaInimigo(objetoACriar.coluna, objetoACriar.linha)
+    local objeto = criaObjeto(objetoACriar)
+    if objeto ~= nil then
+      table.insert(objetos, objeto)
     end
-    table.insert(objetos, objeto)
   end
+end
+
+function criaObjeto(objetoACriar)
+  local objeto = nil
+  if objetoACriar.blocoId == Constantes.BLOCOID_CHAVE then
+    objeto = criaChave(objetoACriar.coluna, objetoACriar.linha)
+  elseif objetoACriar.blocoId == Constantes.BLOCOID_PORTA then
+    objeto = criaPorta(objetoACriar.coluna, objetoACriar.linha)
+  elseif objetoACriar.blocoId == Constantes.BLOCOID_INIMIGO then
+    objeto = criaInimigo(objetoACriar.coluna, objetoACriar.linha)
+  end
+  return objeto
 end
 
 function criaChave(coluna, linha)
@@ -247,7 +313,7 @@ function criaInimigo(coluna, linha)
     tempoDeEspera = 15,
     vida = 3,
     quadroDeAnimacao = 1,
-    direcao = BAIXO
+    direcao = Constantes.BAIXO
   }
   return inimigo
 end
@@ -336,70 +402,60 @@ function atualizaJogador()
 
   temColisao(jogador, 0, 0) -- para verificar se tem colisao com algum inimigo
 
-  -- cima
-  if btn(0) then
-    jogador.direcao = CIMA
-    if not temColisao(jogador, Direcao[CIMA].deltaX, Direcao[CIMA].deltaY) then
-      jogador.y = jogador.y - 1
-      camera.y = camera.y - 1
-      jogador.quadroDeAnimacao = jogador.quadroDeAnimacao + Constantes.VELOCIDADE_ANIMACAO_JOGADOR
+  local direcao = {
+    Constantes.CIMA,
+    Constantes.BAIXO,
+    Constantes.ESQUERDA,
+    Constantes.DIREITA
+  }
+
+  for botao = 0, 3 do
+    if btn(botao) then
+      moveJogadorPara(direcao[botao + 1])
     end
   end
 
-  -- baixo
-  if btn(1) then
-    jogador.direcao = BAIXO
-    if not temColisao(jogador, Direcao[BAIXO].deltaX, Direcao[BAIXO].deltaY) then
-      jogador.y = jogador.y + 1
-      camera.y = camera.y + 1
-      jogador.quadroDeAnimacao = jogador.quadroDeAnimacao + Constantes.VELOCIDADE_ANIMACAO_JOGADOR
-    end
-  end
-
-  -- esquerda
-  if btn(2) then
-    jogador.direcao = ESQUERDA
-    if not temColisao(jogador, Direcao[ESQUERDA].deltaX, Direcao[ESQUERDA].deltaY) then
-      jogador.x = jogador.x - 1
-      camera.x = camera.x - 1
-      jogador.quadroDeAnimacao = jogador.quadroDeAnimacao + Constantes.VELOCIDADE_ANIMACAO_JOGADOR
-    end
-  end
-
-  -- direita
-  if btn(3) then
-    jogador.direcao = DIREITA
-    if not temColisao(jogador, Direcao[DIREITA].deltaX, Direcao[DIREITA].deltaY) then
-      jogador.x = jogador.x + 1
-      camera.x = camera.x + 1
-      jogador.quadroDeAnimacao = jogador.quadroDeAnimacao + Constantes.VELOCIDADE_ANIMACAO_JOGADOR
-    end
-  end
-
-  if jogador.quadroDeAnimacao >= 3 then
-    jogador.quadroDeAnimacao = jogador.quadroDeAnimacao - 2
-  end
+  atualizaAnimacaoJogador()
 
   -- ataque
   if btn(4) then
-    if not espada.visivel then
-      sfx(
-        Constantes.ID_SOM_ESPADA,
-        86, -- número da nota (12 notas por oitava)
-        15, -- duracao em quadros
-        0,  -- canal
-        8,  -- volume
-        2   -- velocidade
-      )
+    fazAtaque()
+  end
 
-      espada.quadrosDeAtaque = QuadrosAtaque[jogador.direcao]
-      espada.quadro = 1
-      espada.visivel = true
-    end
+  atualizaEspada()
+end
+
+function atualizaAnimacaoJogador()
+  if jogador.quadroDeAnimacao >= 3 then
+    jogador.quadroDeAnimacao = jogador.quadroDeAnimacao - 2
+  end
+end
+
+function fazAtaque()
+  if not espada.visivel and espada.esperaDoAtaque == 0 then
+    sfx(
+      Constantes.ID_SOM_ESPADA,
+      86, -- número da nota (12 notas por oitava)
+      15, -- duracao em quadros
+      0,  -- canal
+      8,  -- volume
+      2   -- velocidade
+    )
+
+    espada.esperaDoAtaque = 40
+    espada.quadrosDeAtaque = QuadrosAtaque[jogador.direcao]
+    espada.quadro = 1
+    espada.visivel = true
+  end
+end
+
+function atualizaEspada()
+  if espada.esperaDoAtaque > 0 then
+    espada.esperaDoAtaque = espada.esperaDoAtaque - 1
   end
 
   if espada.visivel then
-    espada.quadro = espada.quadro + 0.45
+    espada.quadro = espada.quadro + Constantes.VELOCIDADE_ANIMACAO_ESPADA
     if espada.quadro < 6 then
       local quadro = math.floor(espada.quadro)
       espada.x = jogador.x + espada.quadrosDeAtaque[quadro].x
@@ -410,6 +466,20 @@ function atualizaJogador()
     else
       espada.visivel = false
     end
+  end
+end
+
+function moveJogadorPara(indiceDirecao)
+  jogador.direcao = indiceDirecao
+  local deltaX = Direcao[indiceDirecao].deltaX
+  local deltaY = Direcao[indiceDirecao].deltaY
+
+  if not temColisao(jogador, deltaX, deltaY) then
+    jogador.x = jogador.x + deltaX
+    jogador.y = jogador.y + deltaY
+    camera.x = camera.x + deltaX
+    camera.y = camera.y + deltaY
+    jogador.quadroDeAnimacao = jogador.quadroDeAnimacao + Constantes.VELOCIDADE_ANIMACAO_JOGADOR
   end
 end
 
@@ -430,15 +500,7 @@ function atualizaInimigo(inimigo)
     inimigo.tempoDeEspera = 15
   end
 
-  if (inimigo.estado == Estado.PARADO) then
-    atualizaEstadoParado(inimigo)
-  elseif (inimigo.estado == Estado.ANDANDO) then
-    atualizaEstadoAndando(inimigo)
-  elseif (inimigo.estado == Estado.PERSEGUINDO) then
-    atualizaEstadoPerseguindo(inimigo)
-  elseif (inimigo.estado == Estado.ATINGIDO) then
-    atualizaEstadoAtingido(inimigo)
-  end
+  atualizaEstado[inimigo.estado](inimigo)
 end
 
 function atualizaEstadoParado(inimigo)
@@ -483,17 +545,17 @@ function atualizaEstadoPerseguindo(inimigo)
   if not temColisao(inimigo, deltaX, 0) then
     inimigo.x = inimigo.x + deltaX * 0.5
     if (deltaX < 0.0) then
-      inimigo.direcao = ESQUERDA
+      inimigo.direcao = Constantes.ESQUERDA
     else
-      inimigo.direcao = DIREITA
+      inimigo.direcao = Constantes.DIREITA
     end
   end
   if not temColisao(inimigo, 0, deltaY) then
     inimigo.y = inimigo.y + deltaY * 0.5
     if (deltaY < 0.0) then
-      inimigo.direcao = CIMA
+      inimigo.direcao = Constantes.CIMA
     else
-      inimigo.direcao = BAIXO
+      inimigo.direcao = Constantes.BAIXO
     end
   end
   atualizaAnimacaoInimigo(inimigo)
@@ -706,21 +768,9 @@ function temColisaoComObjeto(objeto, deltaX, deltaY)
   }
   for indice, objetoAlvo in pairs(objetos) do
     if colide(objetoComDelta, objetoAlvo) then
-      if objeto.tipo == Constantes.TIPO_ESPADA and objetoAlvo.tipo == Constantes.TIPO_INIMIGO then
-        fazColisaoEspadaComInimigo(objeto, objetoAlvo, indice)
-      elseif objeto.tipo == Constantes.TIPO_JOGADOR then
-        if objetoAlvo.tipo == Constantes.TIPO_CHAVE then
-          fazColisaoJogadorComChave(indice)
-        elseif objetoAlvo.tipo == Constantes.TIPO_PORTA then
-          fazColisaoJogadorComPorta(indice)
-          return true
-        elseif objetoAlvo.tipo == Constantes.TIPO_INIMIGO then
-          fazColisaoJogadorComInimigo()
-        end
-      elseif objeto.tipo == Constantes.TIPO_INIMIGO then
-        if objetoAlvo.tipo == Constantes.TIPO_PORTA then
-          return true
-        end
+      local fazColisao = funcaoDeColisao[objeto.tipo][objetoAlvo.tipo]
+      if fazColisao ~= nil then
+        return fazColisao(objeto, objetoAlvo, indice)
       end
     end
   end
@@ -753,9 +803,10 @@ function fazColisaoEspadaComInimigo(espada, inimigo, indiceDoInimigo)
       table.remove(objetos, indiceDoInimigo)
     end
   end
+  return false
 end
 
-function fazColisaoJogadorComChave(indiceDaChave)
+function fazColisaoJogadorComChave(jogador, chave, indiceDaChave)
   sfx(
     Constantes.ID_SOM_CHAVE,
     60, -- número da nota (12 notas por oitava)
@@ -766,9 +817,10 @@ function fazColisaoJogadorComChave(indiceDaChave)
   )
   table.remove(objetos, indiceDaChave)
   jogador.chaves = jogador.chaves + 1
+  return false
 end
 
-function fazColisaoJogadorComPorta(indiceDaPorta)
+function fazColisaoJogadorComPorta(jogador, porta, indiceDaPorta)
   if jogador.chaves > 0 then
     sfx(
       Constantes.ID_SOM_PORTA,
@@ -781,12 +833,12 @@ function fazColisaoJogadorComPorta(indiceDaPorta)
 
     table.remove(objetos, indiceDaPorta)
     jogador.chaves = jogador.chaves - 1
-  else
-    return true
+    return false
   end
+  return true
 end
 
-function fazColisaoJogadorComInimigo()
+function fazColisaoJogadorComInimigo(jogador, inimigo, indiceDoInimigo)
   if jogador.tempoInvulneravel == 0 then
     sfx(
       Constantes.ID_SOM_JOGADOR_ATINGIDO,
@@ -804,6 +856,11 @@ function fazColisaoJogadorComInimigo()
       tempoAteTransicao = 120
     end
   end
+  return false
+end
+
+function fazColisaoInimigoComPorta(inimigo, porta, indiceDaPorta)
+  return true
 end
 
 function temColisaoComMapa(ponto)
