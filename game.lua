@@ -717,13 +717,16 @@ function desenhaTexto(texto, x, y, cor)
 end
 
 function desenhaMapa()
+  local blocoX = math.floor(camera.x / 8)
+  local blocoY = math.floor(camera.y / 8)
+
   map(
-    0,  -- coordenada x do bloco inicial
-    0,  -- coordenada y do bloco inicial
+    blocoX,  -- coordenada x do bloco inicial
+    blocoY,  -- coordenada y do bloco inicial
     Constantes.MAPA_LARGURA, -- largura do mapa em blocos
     Constantes.MAPA_ALTURA,  -- altura do mapa em blocos
-    -camera.x,
-    -camera.y
+    - (camera.x % 8),
+    - (camera.y % 8)
   )
 end
 
