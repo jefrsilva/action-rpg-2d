@@ -22,6 +22,10 @@ Constantes = {
   SPRITE_CORACAO_VAZIO = 352,
   SPRITE_CORACAO_CHEIO = 368,
   SPRITE_CHAVE_PEQUENA = 354,
+  SPRITE_TITULO = 432,
+
+  TITULO_LARGURA = 12,
+  TITULO_ALTURA = 4,
 
   BLOCOID_CHAVE = 224,
   BLOCOID_PORTA = 225,
@@ -612,15 +616,15 @@ function desenhaTelaDeTitulo()
   end
 
   spr(
-    432,
-    72,
-    48,
+    Constantes.SPRITE_TITULO,
+    72, -- posicao X
+    48, -- posicao Y
     1,  -- cor transparente
     1,  -- escala
     0,  -- sem espelhar
     0,  -- sem rotacionar
-    12,  -- largura em blocos
-    4   -- altura em blocos
+    Constantes.TITULO_LARGURA,  -- largura em blocos
+    Constantes.TITULO_ALTURA    -- altura em blocos
   )
 
   if desenhaChamada then
