@@ -38,7 +38,10 @@ Constantes = {
   ID_SOM_ESPADA = 3,
   ID_SOM_JOGADOR_ATINGIDO = 4,
   ID_SOM_INICIO = 5,
-  ID_SOM_FINAL = 6
+  ID_SOM_FINAL = 6,
+
+  MAPA_LARGURA = 240,
+  MAPA_ALTURA = 136
 }
 
 Estado = {
@@ -192,8 +195,8 @@ function inicializa()
 end
 
 function leObjetosDoMapa()
-  for linha = 0, 34 do
-    for coluna = 0, 60 do
+  for linha = 0, Constantes.MAPA_ALTURA do
+    for coluna = 0, Constantes.MAPA_LARGURA do
       local blocoId = mget(coluna, linha)
       if blocoEhSaida(blocoId) then
         posicaoDaSaida = {
@@ -608,8 +611,20 @@ function desenhaTelaDeTitulo()
     desenhaChamada = false
   end
 
+  spr(
+    432,
+    72,
+    48,
+    1,  -- cor transparente
+    1,  -- escala
+    0,  -- sem espelhar
+    0,  -- sem rotacionar
+    12,  -- largura em blocos
+    4   -- altura em blocos
+  )
+
   if desenhaChamada then
-    desenhaTexto("Pressione Z para iniciar",56, 108, 15)
+    desenhaTexto("Pressione Z para iniciar",56, 96, 15)
   end
 end
 
@@ -701,8 +716,8 @@ function desenhaMapa()
   map(
     0,  -- coordenada x do bloco inicial
     0,  -- coordenada y do bloco inicial
-    60, -- largura do mapa em blocos
-    34, -- altura do mapa em blocos
+    Constantes.MAPA_LARGURA, -- largura do mapa em blocos
+    Constantes.MAPA_ALTURA,  -- altura do mapa em blocos
     -camera.x,
     -camera.y
   )
