@@ -44,8 +44,11 @@ Constantes = {
   ID_SOM_INICIO = 5,
   ID_SOM_FINAL = 6,
 
-  MAPA_LARGURA = 240,
-  MAPA_ALTURA = 136
+  MAPA_LARGURA_TOTAL = 240,
+  MAPA_ALTURA_TOTAL = 136,
+
+  MAPA_LARGURA_TELA = 31,
+  MAPA_ALTURA_TELA = 18
 }
 
 Estado = {
@@ -199,8 +202,8 @@ function inicializa()
 end
 
 function leObjetosDoMapa()
-  for linha = 0, Constantes.MAPA_ALTURA do
-    for coluna = 0, Constantes.MAPA_LARGURA do
+  for linha = 0, Constantes.MAPA_ALTURA_TOTAL do
+    for coluna = 0, Constantes.MAPA_LARGURA_TOTAL do
       local blocoId = mget(coluna, linha)
       if blocoEhSaida(blocoId) then
         posicaoDaSaida = {
@@ -723,8 +726,8 @@ function desenhaMapa()
   map(
     blocoX,  -- coordenada x do bloco inicial
     blocoY,  -- coordenada y do bloco inicial
-    Constantes.MAPA_LARGURA, -- largura do mapa em blocos
-    Constantes.MAPA_ALTURA,  -- altura do mapa em blocos
+    Constantes.MAPA_LARGURA_TELA, -- largura do mapa em blocos
+    Constantes.MAPA_ALTURA_TELA,  -- altura do mapa em blocos
     - (camera.x % 8),
     - (camera.y % 8)
   )
