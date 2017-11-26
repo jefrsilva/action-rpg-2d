@@ -16,16 +16,20 @@ Constantes = {
   TIPO_ESPADA = "ESPADA",
 
   SPRITE_JOGADOR =  256,
-  SPRITE_CHAVE = 288,
-  SPRITE_PORTA = 290,
-  SPRITE_INIMIGO = 384,
-  SPRITE_CORACAO_VAZIO = 352,
-  SPRITE_CORACAO_CHEIO = 368,
-  SPRITE_CHAVE_PEQUENA = 354,
-  SPRITE_TITULO = 432,
+  SPRITE_CHAVE = 364,
+  SPRITE_PORTA = 366,
+  SPRITE_INIMIGO = 288,
+  SPRITE_CORACAO_VAZIO = 396,
+  SPRITE_CORACAO_CHEIO = 412,
+  SPRITE_CHAVE_PEQUENA = 398,
+  SPRITE_TITULO = 352,
+  SPRITE_ALURA = 416,
 
   TITULO_LARGURA = 12,
   TITULO_ALTURA = 4,
+
+  ALURA_LARGURA = 7,
+  ALURA_ALTURA = 3,
 
   BLOCOID_CHAVE = 224,
   BLOCOID_PORTA = 225,
@@ -92,20 +96,20 @@ AnimacaoJogador = {
 
 AnimacaoInimigo = {
   { -- andando pra cima
-    {sprite = 384},
-    {sprite = 386}
+    {sprite = 288},
+    {sprite = 290}
   },
   { -- andando pra baixo
-    {sprite = 388},
-    {sprite = 390}
+    {sprite = 292},
+    {sprite = 294}
   },
   { -- andando pra esquerda
-    {sprite = 392},
-    {sprite = 394}
+    {sprite = 296},
+    {sprite = 298}
   },
   { -- andando pra direita
-    {sprite = 396},
-    {sprite = 398}
+    {sprite = 300},
+    {sprite = 302}
   },
 }
 
@@ -618,10 +622,11 @@ function desenhaTelaDeTitulo()
     desenhaChamada = false
   end
 
+  -- Desenha título do jogo
   spr(
     Constantes.SPRITE_TITULO,
-    72, -- posicao X
-    48, -- posicao Y
+    80, -- posicao X
+    20, -- posicao Y
     1,  -- cor transparente
     1,  -- escala
     0,  -- sem espelhar
@@ -631,8 +636,21 @@ function desenhaTelaDeTitulo()
   )
 
   if desenhaChamada then
-    desenhaTexto("Pressione Z para iniciar",56, 96, 15)
+    desenhaTexto("Pressione Z para iniciar",56, 72, 15)
   end
+
+  spr(
+  -- Desenha logo da Alura
+    Constantes.SPRITE_ALURA,
+    94,  -- posicao X
+    112, -- posicao Y
+    1,  -- cor transparente
+    1,  -- escala
+    0,  -- sem espelhar
+    0,  -- sem rotacionar
+    Constantes.ALURA_LARGURA,  -- largura em blocos
+    Constantes.ALURA_ALTURA    -- altura em blocos
+  )
 end
 
 function desenhaTelaDeJogo()
