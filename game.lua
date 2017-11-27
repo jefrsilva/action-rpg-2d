@@ -626,7 +626,7 @@ function desenhaTelaDeTitulo()
   spr(
     Constantes.SPRITE_TITULO,
     80, -- posicao X
-    20, -- posicao Y
+    12, -- posicao Y
     1,  -- cor transparente
     1,  -- escala
     0,  -- sem espelhar
@@ -636,14 +636,14 @@ function desenhaTelaDeTitulo()
   )
 
   if desenhaChamada then
-    desenhaTexto("Pressione Z para iniciar", 56, 72, 15)
+    desenhaTexto("Pressione Z para iniciar", 56, 64, 15)
   end
 
   spr(
   -- Desenha logo da Alura
     Constantes.SPRITE_ALURA,
     94,  -- posicao X
-    100, -- posicao Y
+    92, -- posicao Y
     1,  -- cor transparente
     1,  -- escala
     0,  -- sem espelhar
@@ -652,7 +652,7 @@ function desenhaTelaDeTitulo()
     Constantes.ALURA_ALTURA    -- altura em blocos
   )
 
-  desenhaTexto("www.alura.com.br", 78, 130, 15)
+  desenhaTexto("www.alura.com.br", 78, 122, 15)
 
 end
 
